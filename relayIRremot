@@ -1,0 +1,84 @@
+#include <IRremote.h>
+
+// Pin untuk IR receiver dan relay
+const int IR_RECEIVER_PIN = 15; // Pin untuk IR receiver
+const int RELAY1_PIN = 27;      // Pin untuk relay 1
+const int RELAY2_PIN = 26;      // Pin untuk relay 2
+const int RELAY3_PIN = 33;      // Pin untuk relay 3
+
+// Variabel untuk menyimpan status relay dan waktu debounce
+bool relay1State = false;
+bool relay2State = false;
+bool relay3State = false;
+unsigned long lastPressTime = 0; // Waktu terakhir tombol ditekan
+const unsigned long debounceDelay = 300; // Delay debounce dalam ms
+
+// Deklarasi IR receiver
+IRrecv irrecv(IR_RECEIVER_PIN);
+decode_results results;
+
+// Kode IR untuk masing-masing relay (ganti sesuai dengan kode dari remote Anda)
+const uint32_t RELAY1_TOGGLE_CODE = 0x17; // Kode untuk relay 1
+const uint32_t RELAY2_TOGGLE_CODE = 0x16; // Kode untuk relay 2
+const uint32_t RELAY3_TOGGLE_CODE = 0x15; // Kode untuk relay 3
+
+void setup() {
+  // Inisialisasi pin relay sebagai output
+  pinMode(RELAY1_PIN, OUTPUT);
+  pinMode(RELAY2_PIN, OUTPUT);
+  pinMode(RELAY3_PIN, OUTPUT);
+
+  // Awalnya semua relay mati
+  digitalWrite(RELAY1_PIN, LOW);
+  digitalWrite(RELAY2_PIN, LOW);
+  digitalWrite(RELAY3_PIN, LOW);
+
+  // Inisialisasi serial monitor
+  Serial.begin(115200);
+
+  // Inisialisasi IR receiver
+  IrReceiver.begin(IR_RECEIVER_PIN, ENABLE_LED_FEEDBACK); // Memulai IR receiver
+  Serial.println("IR receiver aktif");
+}
+
+void loop() {
+  // Periksa apakah ada sinyal IR masuk
+  if (IrReceiver.decode()) {
+    Serial.print("Kode IR diterima: ");
+    Serial.println(IrReceiver.decodedIRData.command, HEX);
+    uint32_t receivedCode = IrReceiver.decodedIRData.command; // Ambil kode Command
+
+    // Periksa debounce
+    unsigned long currentTime = millis();
+    if (currentTime - lastPressTime > debounceDelay) {
+      // Toggle relay 1
+      if (receivedCode == RELAY1_TOGGLE_CODE) {
+        relay1State = !relay1State; // Toggle status relay 1
+        digitalWrite(RELAY1_PIN, relay1State ? HIGH : LOW);
+        Serial.print("Relay 1 ");
+        Serial.println(relay1State ? "ON" : "OFF");
+      }
+
+      // Toggle relay 2
+      else if (receivedCode == RELAY2_TOGGLE_CODE) {
+        relay2State = !relay2State; // Toggle status relay 2
+        digitalWrite(RELAY2_PIN, relay2State ? HIGH : LOW);
+        Serial.print("Relay 2 ");
+        Serial.println(relay2State ? "ON" : "OFF");
+      }
+
+      // Toggle relay 3
+      else if (receivedCode == RELAY3_TOGGLE_CODE) {
+        relay3State = !relay3State; // Toggle status relay 3
+        digitalWrite(RELAY3_PIN, relay3State ? HIGH : LOW);
+        Serial.print("Relay 3 ");
+        Serial.println(relay3State ? "ON" : "OFF");
+      }
+
+      lastPressTime = currentTime; // Perbarui waktu terakhir tombol ditekan
+    }
+
+    // Bersihkan hasil IR setelah diproses
+    IrReceiver.resume();
+  }
+}
